@@ -1,19 +1,15 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { DollarSign, Users, Percent, RotateCcw } from "lucide-react";
+import { Users, Percent, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { convertCurrency } from "@/ai/flows/currency-converter-flow";
+import { useToast } from "@/hooks/use-toast";
+
 
 const tipOptions = [15, 18, 20, 25];
 
@@ -23,6 +19,9 @@ export function TipCalculator() {
   const [customTip, setCustomTip] = useState("");
   const [people, setPeople] = useState("1");
   const [currency, setCurrency] = useState("$");
+  const [currencyQuery, setCurrencyQuery] = useState("USD");
+  const [isConverting, setIsConverting] = useState(false);
+  const { toast } = useToast();
 
   const billAmount = useMemo(() => parseFloat(bill) || 0, [bill]);
   const numPeople = useMemo(() => parseInt(people, 10) || 1, [people]);
@@ -51,10 +50,31 @@ export function TipCalculator() {
     setTip(18);
     setCustomTip("");
     setPeople("1");
+    setCurrency("$");
+    setCurrencyQuery("USD");
   };
 
   const formatCurrency = (value: number) => {
     return isNaN(value) || !isFinite(value) ? "0.00" : value.toFixed(2);
+  };
+
+  const handleCurrencyConversion = async () => {
+    if (!currencyQuery) return;
+    setIsConverting(true);
+    try {
+      const result = await convertCurrency({ query: currencyQuery });
+      if (result.currencySymbol) {
+        setCurrency(result.currencySymbol);
+      }
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "Could not convert currency.",
+      });
+    } finally {
+      setIsConverting(false);
+    }
   };
   
   return (
@@ -64,18 +84,8 @@ export function TipCalculator() {
           <div>
             <Label htmlFor="bill" className="text-base">Bill Amount</Label>
             <div className="mt-2 relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                 <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger className="w-auto h-auto p-0 border-none bg-transparent focus:ring-0 text-muted-foreground text-lg">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="$">$ USD</SelectItem>
-                        <SelectItem value="€">€ EUR</SelectItem>
-                        <SelectItem value="£">£ GBP</SelectItem>
-                        <SelectItem value="¥">¥ JPY</SelectItem>
-                    </SelectContent>
-                </Select>
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                 <span className="text-muted-foreground text-2xl">{currency}</span>
               </div>
               <Input
                 id="bill"
@@ -83,7 +93,7 @@ export function TipCalculator() {
                 placeholder="0.00"
                 value={bill}
                 onChange={(e) => setBill(e.target.value)}
-                className="pl-16 pr-4 py-6 text-2xl text-right font-semibold"
+                className="pl-12 pr-4 py-6 text-2xl text-right font-semibold"
                 min="0"
               />
             </div>
@@ -120,19 +130,42 @@ export function TipCalculator() {
               </div>
             </div>
           </div>
-
-          <div>
-            <Label htmlFor="people" className="text-base">Number of People</Label>
-            <div className="mt-2 relative">
-              <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="people"
-                type="number"
-                value={people}
-                onChange={(e) => setPeople(e.target.value)}
-                className="pl-12 pr-4 py-6 text-2xl text-center font-semibold"
-                min="1"
-              />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="people" className="text-base">Number of People</Label>
+              <div className="mt-2 relative">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="people"
+                  type="number"
+                  value={people}
+                  onChange={(e) => setPeople(e.target.value)}
+                  className="pl-12 pr-4 py-6 text-xl text-center font-semibold"
+                  min="1"
+                />
+              </div>
+            </div>
+             <div>
+              <Label htmlFor="currency-query" className="text-base">Currency</Label>
+               <div className="mt-2 relative">
+                <Input
+                  id="currency-query"
+                  placeholder="e.g. Euros"
+                  value={currencyQuery}
+                  onChange={(e) => setCurrencyQuery(e.target.value)}
+                  className="pr-12 py-6 text-xl text-center"
+                />
+                <Button 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
+                  onClick={handleCurrencyConversion}
+                  disabled={isConverting}
+                  aria-label="Convert Currency with AI"
+                >
+                  <Sparkles className={cn("h-5 w-5", isConverting && "animate-spin")} />
+                </Button>
+               </div>
             </div>
           </div>
         </div>
@@ -168,7 +201,7 @@ export function TipCalculator() {
                 onClick={handleReset} 
                 variant="secondary" 
                 className="w-full h-14 text-lg bg-accent-foreground/10 hover:bg-accent-foreground/20 text-accent-foreground"
-                disabled={bill === "" && people === "1" && tip === 18}
+                disabled={bill === "" && people === "1" && tip === 18 && currencyQuery === "USD"}
             >
                 <RotateCcw className="mr-2 h-5 w-5" />
                 Reset
