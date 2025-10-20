@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
+import { Poppins } from 'next/font/google';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -7,18 +8,20 @@ export const metadata: Metadata = {
   description: 'A tipping calculator app to help calculate tip on a bill amongst friends.',
 };
 
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+  display: 'swap',
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={`dark ${poppins.variable}`}>
       <body className="font-body antialiased">
         {children}
         <Toaster />
