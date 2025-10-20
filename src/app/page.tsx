@@ -1,5 +1,6 @@
 import { TipCalculator } from '@/components/app/tip-calculator';
 import { Logo } from '@/components/icons/logo';
+import { AdBanner } from '@/components/app/ad-banner';
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
             TipSplit
           </h1>
         </div>
+        <AdBanner />
         <TipCalculator />
       </main>
       <footer className="z-10 mt-8 text-center text-muted-foreground text-sm">
